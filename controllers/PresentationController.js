@@ -1,4 +1,5 @@
 const Presentation = require('../models/Presentation');
+const ObjectId = require('mongoose').Types.ObjectId;
 
 exports.load_presentations = (req, res) => {
   // code to load presentations goes here
@@ -7,22 +8,48 @@ exports.load_presentations = (req, res) => {
 
 exports.load_presentation = (req, res) => {
   // code to load single presentation goes here
-  res.send('Hello Presentation (singular)');
+  const { id } = req.params;
+  Presentation.findById(id).then((presentation) => {
+    if (presentation) {
+      res.json();
+    }
+  }).catch((err) => {
+    res.send({
+      err,
+      errData: 'Presentation not found'
+    });
+  })
 }
 
 exports.create_presentation = (req, res) => {
-  // code for creating presentations goes here
-  res.send('Hello Create Presentation');
+  const {
+    title,
+    slides
+  } = req.body;
+  Presentation.create({ title, slides, created_at: Date.now()}).then((result) => {
+    res.json(result);
+  }).catch((err) => {
+    res.json(err);
+  })
 }
-
-/**
- * After thinking about this more, this should also really go into it's own service
- * but it's going to live here for now for demonstration purposes
- */
 
 exports.load_slides = (req, res) => {
   // code to load slides goes here
-  res.send('Hello Load Slide');
+  const {
+    id
+  } = req.body;
+  try {
+    Presentation.find({ _id: new ObjectId(id) }, (err, presentation) => {
+      if (!!presentation) {
+        const [ slides ] = presentation;
+        res.json({slides: slides});
+      }
+    })
+  } catch (err) {
+    if (err) {
+      res.json(err);
+    }
+  }
 }
 
 exports.get_slide_by_id = (req, res) => {
@@ -31,13 +58,59 @@ exports.get_slide_by_id = (req, res) => {
 }
 
 exports.create_slide = (req, res) => {
+  const {
+    id,
+    data
+  } = req.body;
   // code for creating a slide goes here
-  res.send('hello create slide');
+  try {
+    Presentation.find({_id: new ObjectId(id)}, (err, presentation) => {
+      if (!!presentation) {
+        const [id] = presentation;
+        Presentation.updateOne({ "_id": id },
+          {
+            "$push" : { 
+            "slides": { slide: JSON.stringify(data) },
+          }}, (err, update) => {
+            const [ slides ] = presentation;
+            if (err) {
+              res.send(err);
+            } else {
+              res.send({
+                status: update,
+                presentation: slides
+              });
+            }
+          });
+      }
+    })
+  } catch (err) {
+    res.json(err);
+  }
 }
 
 exports.update_slide = (req, res) => {
-  // code for updating a slide goes here
-  res.send('hello update slide');
+  const { slide } = req.params;
+  if (!!slide && slide.id) {
+    Presentation.findOne({ slides: slide.id }).then((foundSlides) => {
+      if (foundSlides) {
+        foundSlides.map((foundSlide) => {
+          if (foundSlide === slide.id) {
+            Presentation.update(foundSlide.id, {
+              $set: {
+                data: slide.data
+              }
+            });
+          }
+        });
+      }
+    }).catch((err) => {
+      res.send({
+        err,
+        errData: "Could not update slide"
+      });
+    });
+  }
 }
 
 exports.delete_slide = (req, res) => {

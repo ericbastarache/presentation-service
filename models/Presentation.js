@@ -1,14 +1,14 @@
-/**
- * This will not work until there's an actual database connection to use
- */
+const mongoose = require('mongoose');
+const Schema = mongoose.Schema;
 
-// const Sequelize = require('sequelize');
-// // connection for the database
-// const sequelize = new Sequelize('');
+const PresentationSchema = new Schema({
+  title: String,
+  slides: [
+    { slide: Object }
+  ],
+  created_at: Date,
+});
 
-// // create the presentation model
-// class Presentation extends Sequelize.Model {}
+const PresentationModel = mongoose.model('Presentation', PresentationSchema);
 
-
-
-// module.exports = Presentation;
+module.exports = PresentationModel;
