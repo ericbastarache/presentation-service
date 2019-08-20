@@ -3,7 +3,7 @@ const bodyParser = require('body-parser');
 const helmet = require('helmet');
 const routes = require('./routes');
 const mongoose = require('mongoose');
-mongoose.connect('mongodb://localhost:27017/presentations', { useNewUrlParser: true });
+mongoose.connect('mongodb://localhost:27017/presentations', { useNewUrlParser: true, useFindAndModify: false });
 
 let db = mongoose.connection;
 

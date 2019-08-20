@@ -14,7 +14,7 @@ exports.load_presentation = (req, res) => {
       res.json();
     }
   }).catch((err) => {
-    res.send({
+    res.json({
       err,
       errData: 'Presentation not found'
     });
@@ -27,34 +27,93 @@ exports.create_presentation = (req, res) => {
     slides
   } = req.body;
   Presentation.create({ title, slides, created_at: Date.now()}).then((result) => {
-    res.json(result);
+    res.json({
+      presentation: result
+    });
   }).catch((err) => {
-    res.json(err);
+    res.json({
+      error: err
+    });
   })
 }
 
 exports.load_slides = (req, res) => {
-  // code to load slides goes here
   const {
     id
   } = req.body;
   try {
     Presentation.find({ _id: new ObjectId(id) }, (err, presentation) => {
       if (!!presentation) {
-        const [ slides ] = presentation;
-        res.json({slides: slides});
+        const [ { slides } ] = presentation;
+        res.json({ slides: slides });
       }
     })
   } catch (err) {
     if (err) {
-      res.json(err);
+      res.json({
+        error: err
+      });
     }
   }
 }
 
 exports.get_slide_by_id = (req, res) => {
-  //code for getting slides by id goes here
-  res.send('Hello slide by id');
+  const {
+    id
+  } = req.params;
+  const {
+    presentationId
+  } = req.body;
+  try {
+    Presentation.find({ _id: new ObjectId(presentationId) }, (err, presentation) => {
+      if (presentation) {
+        const [ { slides } ] = presentation;
+        if (err) {
+          res.json({
+            error: err
+          })
+        } else {
+          const foundSlide = slides
+            .map(slide => slide)
+            .filter(foundSlide => foundSlide._id == id);
+          
+          res.json({
+            slides: foundSlide
+          });
+        }
+      }
+    })
+  } catch (err) {
+    res.json({
+      error: err
+    })
+  }
+}
+
+exports.get_last_slide = (req, res) => {
+  const {
+    id
+  } = req.body;
+  try {
+    Presentation.find({_id: new ObjectId(id)}, (err, presentation) => {
+      if (presentation) {
+        const [{ slides }] = presentation;
+        if (err) {
+          res.json({
+            error: err
+          })
+        } else {
+          res.json({
+            slide: slides[slides.length - 1]
+          });
+        }
+      }
+    })
+  } catch (err) {
+    res.json({
+      error: err
+    })
+  }
 }
 
 exports.create_slide = (req, res) => {
@@ -62,26 +121,29 @@ exports.create_slide = (req, res) => {
     id,
     data
   } = req.body;
-  // code for creating a slide goes here
   try {
     Presentation.find({_id: new ObjectId(id)}, (err, presentation) => {
-      if (!!presentation) {
-        const [id] = presentation;
-        Presentation.updateOne({ "_id": id },
-          {
-            "$push" : { 
-            "slides": { slide: JSON.stringify(data) },
-          }}, (err, update) => {
-            const [ slides ] = presentation;
-            if (err) {
-              res.send(err);
-            } else {
-              res.send({
-                status: update,
-                presentation: slides
-              });
-            }
-          });
+      if (err) {
+        res.json({
+          error: err
+        })
+      } else {
+        if (!!presentation) {
+          const [id] = presentation;
+          Presentation.updateOne({ "_id": id },
+            {
+              "$push" : { 
+              "slides": { slide: JSON.stringify(data) },
+            }}, (err, update) => {
+              if (err) {
+                res.json({
+                  error: err
+                });
+              } else {
+                res.json(update);
+              }
+            });
+        }
       }
     })
   } catch (err) {
@@ -90,30 +152,76 @@ exports.create_slide = (req, res) => {
 }
 
 exports.update_slide = (req, res) => {
-  const { slide } = req.params;
-  if (!!slide && slide.id) {
-    Presentation.findOne({ slides: slide.id }).then((foundSlides) => {
-      if (foundSlides) {
-        foundSlides.map((foundSlide) => {
-          if (foundSlide === slide.id) {
-            Presentation.update(foundSlide.id, {
-              $set: {
-                data: slide.data
-              }
-            });
-          }
-        });
-      }
-    }).catch((err) => {
-      res.send({
-        err,
-        errData: "Could not update slide"
+  const { id } = req.params;
+  const { presentation, data } = req.body;
+  if (!!id && !!presentation && !!data) {
+    try {
+      Presentation.findOneAndUpdate({ _id: new ObjectId(presentation), "slides._id": id }, 
+      {
+        $set: {
+          "slides.$.slide": JSON.stringify(data)
+        }
+      }, { upsert: true }, (err, doc) => {
+        if (err) {
+          res.json({
+            error: err
+          });
+        } else {
+          res.json(doc)
+        }
+      })
+    } catch (err) {
+      res.json({
+        error: err
       });
-    });
+    }
   }
 }
 
 exports.delete_slide = (req, res) => {
-  // code for deleting a slide goes here
-  res.send('hello delete slide');
+  const {
+    id
+  } = req.params;
+  const {
+    presentation
+  } = req.body
+
+  try {
+    Presentation.findByIdAndUpdate({_id: new ObjectId(presentation)}, {
+      '$pull': {
+        "slides": {
+          '_id': new ObjectId(id)
+        }
+      }
+    }, (err, result) => {
+      if (err) {
+        res.json({
+          error: err
+        })
+      } else {
+        res.json({
+          status: "200 OK"
+        });
+      }
+    })
+  } catch (err) {
+    res.json({
+      error: err
+    });
+  }
+
+  Presentation.findOneAndDelete({"slides._id": id },
+  {
+    "$pull": {
+      "slides": {
+        _id: id
+      }
+    }
+  }, (err, doc) => {
+    if (err) {
+      res.json(err);
+    } else {
+      res.json(doc);
+    }
+  })
 };
