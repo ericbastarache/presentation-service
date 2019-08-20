@@ -119,7 +119,8 @@ exports.get_last_slide = (req, res) => {
 exports.create_slide = (req, res) => {
   const {
     id,
-    data
+    data,
+    thumbnail
   } = req.body;
   try {
     Presentation.find({_id: new ObjectId(id)}, (err, presentation) => {
@@ -133,7 +134,7 @@ exports.create_slide = (req, res) => {
           Presentation.updateOne({ "_id": id },
             {
               "$push" : { 
-              "slides": { slide: JSON.stringify(data) },
+              "slides": {data: JSON.stringify(data), thumbnail},
             }}, (err, update) => {
               if (err) {
                 res.json({
