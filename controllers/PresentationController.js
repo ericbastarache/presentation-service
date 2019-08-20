@@ -133,7 +133,7 @@ exports.create_slide = (req, res) => {
           Presentation.updateOne({ "_id": id },
             {
               "$push" : { 
-              "slides": { slide: JSON.stringify(data) },
+              "slides": {slide: {data: JSON.stringify(data)}},
             }}, (err, update) => {
               if (err) {
                 res.json({
