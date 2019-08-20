@@ -2,7 +2,6 @@ const Presentation = require('../models/Presentation');
 const ObjectId = require('mongoose').Types.ObjectId;
 
 exports.load_presentations = (req, res) => {
-  // code to load presentations goes here
   res.send('Hello Presentations');
 }
 
