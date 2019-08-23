@@ -119,7 +119,8 @@ exports.create_slide = (req, res) => {
   const {
     id,
     data,
-    thumbnail
+    thumbnail,
+    canvasDimensions
   } = req.body;
   try {
     Presentation.find({_id: new ObjectId(id)}, (err, presentation) => {
@@ -133,7 +134,7 @@ exports.create_slide = (req, res) => {
           Presentation.updateOne({ "_id": id },
             {
               "$push" : { 
-              "slides": {data: JSON.stringify(data), thumbnail},
+              "slides": {data: JSON.stringify(data), thumbnail, canvasDimensions},
             }}, (err, update) => {
               if (err) {
                 res.json({
@@ -153,15 +154,18 @@ exports.create_slide = (req, res) => {
 
 exports.update_slide = (req, res) => {
   const { id } = req.params;
-  const { presentation, data } = req.body;
+  const { presentation, data, thumbnail, canvasDimensions } = req.body;
+  
   if (!!id && !!presentation && !!data) {
     try {
       Presentation.findOneAndUpdate({ _id: new ObjectId(presentation), "slides._id": id }, 
       {
         $set: {
-          "slides.$.slide": JSON.stringify(data)
+          "slides.$.slide.data": JSON.stringify(data),
+          "slides.$.slide.thumbnail": thumbnail,
+          "slides.$.slide.canvasDimensions": canvasDimensions,
         }
-      }, { upsert: true }, (err, doc) => {
+      }, { upsert: true}, (err, doc) => {
         if (err) {
           res.json({
             error: err

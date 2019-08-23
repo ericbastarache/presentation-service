@@ -4,6 +4,7 @@ const helmet = require('helmet');
 const routes = require('./routes');
 const mongoose = require('mongoose');
 mongoose.connect('mongodb://localhost:27017/presentations', { useNewUrlParser: true, useFindAndModify: false });
+mongoose.set('debug', true)
 
 let db = mongoose.connection;
 

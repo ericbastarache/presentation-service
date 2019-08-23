@@ -4,7 +4,7 @@ const Schema = mongoose.Schema;
 const PresentationSchema = new Schema({
   title: String,
   slides: [
-    { data: Object, thumbnail: Object }
+    { data: Object, thumbnail: Object, canvasDimensions: { height: Number, width: Number} }
   ],
   created_at: Date,
 });
