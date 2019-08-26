@@ -3,9 +3,9 @@ const PresentationController = require('../controllers/PresentationController');
 const router = express.Router();
 
 
-router.get('/presentations', PresentationController.load_presentations);
 router.get('/presentations/:id', PresentationController.load_presentation);
 router.post('/presentations/create', PresentationController.create_presentation);
+router.post('/presentations/load_temp_presentations', PresentationController.load_temp_presentations);
 router.get('/slides', PresentationController.load_slides);
 router.get('/slides/:id', PresentationController.get_slide_by_id);
 router.post('/slides/create', PresentationController.create_slide);

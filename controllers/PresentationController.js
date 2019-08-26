@@ -1,8 +1,25 @@
 const Presentation = require('../models/Presentation');
 const ObjectId = require('mongoose').Types.ObjectId;
 
-exports.load_presentations = (req, res) => {
-  res.send('Hello Presentations');
+exports.load_temp_presentations = (req, res) => {
+  const { userID } = req.body;
+  try {
+    Presentation.find({ userID }, (err, presentations) => {
+      if (presentations) {
+        if (err) {
+          res.json({
+            error: err
+          })
+        } else {
+          res.json(presentations);
+        }
+      }
+    })
+  } catch (err) {
+    res.json({
+      error: err
+    })
+  }
 }
 
 exports.load_presentation = (req, res) => {
@@ -23,9 +40,10 @@ exports.load_presentation = (req, res) => {
 exports.create_presentation = (req, res) => {
   const {
     title,
+    userID,
     slides
   } = req.body;
-  Presentation.create({ title, slides, created_at: Date.now()}).then((result) => {
+  Presentation.create({ title, userID, slides, created_at: Date.now()}).then((result) => {
     res.json({
       presentation: result
     });
@@ -35,6 +53,7 @@ exports.create_presentation = (req, res) => {
     });
   })
 }
+
 
 exports.load_slides = (req, res) => {
   const {
