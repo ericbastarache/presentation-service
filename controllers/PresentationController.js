@@ -173,26 +173,15 @@ exports.create_slide = (req, res) => {
 
 exports.update_slide = (req, res) => {
   const { id } = req.params;
-  const { presentation, data, thumbnail, canvasDimensions } = req.body;
-  
+  const { presentation, data, canvasDimensions } = req.body;
   if (!!id && !!presentation && !!data) {
     try {
-      Presentation.findOneAndUpdate({ _id: new ObjectId(presentation), "slides._id": id }, 
-      {
-        $set: {
-          "slides.$.slide.data": JSON.stringify(data),
-          "slides.$.slide.thumbnail": thumbnail,
-          "slides.$.slide.canvasDimensions": canvasDimensions,
-        }
-      }, { upsert: true}, (err, doc) => {
-        if (err) {
-          res.json({
-            error: err
-          });
-        } else {
-          res.json(doc)
-        }
-      })
+      Presentation.findById(presentation, function (error, result) {
+        if (error) console.log(error);
+        result.slides.id(id).data = JSON.stringify(data);
+        result.slides.id(id).canvasDimensions = canvasDimensions
+        result.save();
+    });
     } catch (err) {
       res.json({
         error: err
