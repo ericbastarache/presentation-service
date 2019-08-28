@@ -1,5 +1,6 @@
 const Presentation = require('../models/Presentation');
 const ObjectId = require('mongoose').Types.ObjectId;
+const helper = require('../helpers'); 
 
 exports.load_temp_presentations = (req, res) => {
   const { userID } = req.body;
@@ -19,6 +20,23 @@ exports.load_temp_presentations = (req, res) => {
     res.json({
       error: err
     })
+  }
+}
+
+exports.save_temp_presentations = async (req, res) => {
+  const { id, token } = req.body
+  if (!!id && !!token) {
+    try {
+      const result = await helper.verifyToken(token)
+      if (result.valid) {
+        Presentation.updateMany({userID: id}, {$set: {userID: token}}).then(resp => res.json({status: 200}))
+      }
+    }
+    catch (err) {
+      res.json({
+        error: err
+      });
+    }
   }
 }
 
@@ -181,6 +199,9 @@ exports.update_slide = (req, res) => {
         result.slides.id(id).data = JSON.stringify(data);
         result.slides.id(id).canvasDimensions = canvasDimensions
         result.save();
+        res.json({
+          status: 200
+        });
     });
     } catch (err) {
       res.json({
