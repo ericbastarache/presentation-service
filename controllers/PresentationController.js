@@ -1,58 +1,99 @@
 const Presentation = require('../models/Presentation');
 const ObjectId = require('mongoose').Types.ObjectId;
-const helper = require('../helpers'); 
+const helper = require('../helpers');
+const { INITIAL_SLIDE } = require('../constants/canvas_starter')
 
-exports.load_temp_presentations = (req, res) => {
-  const { userID } = req.body;
-  try {
-    Presentation.find({ userID }, (err, presentations) => {
-      if (presentations) {
-        if (err) {
-          res.json({
-            error: err
-          })
-        } else {
-          res.json(presentations);
-        }
+
+exports.load_temp_presentations = async (req, res) => {
+  const { token } = req.body;
+  if (token) {
+    const result = await helper.verifyToken(token)
+    if (result.valid) {
+      try {
+        Presentation.find({ userID: token }, (err, presentations) => {
+          //if presentations exist
+          if (presentations.length > 0) {
+            if (err) {
+              res.json({
+                error: err
+              })
+            } else {
+              res.json(presentations);
+            }
+            //if presentations do not exist
+          } else {
+            Presentation.create({ title: 'Title', userID: token, slides: INITIAL_SLIDE, created_at: Date.now()}).then((presentations) => {
+              res.json([presentations]);
+            }).catch((err) => {
+              res.json({
+                error: err
+              });
+            })
+          }
+        })
+      } catch (err) {
+        res.json({
+          error: err
+        })
       }
-    })
-  } catch (err) {
-    res.json({
-      error: err
-    })
+    } else {
+      res.json({
+        error: 'Invalid token'
+      })
+    }
   }
 }
 
 exports.save_temp_presentations = async (req, res) => {
-  const { id, token } = req.body
-  if (!!id && !!token) {
-    try {
-      const result = await helper.verifyToken(token)
-      if (result.valid) {
-        Presentation.updateMany({userID: id}, {$set: {userID: token}}).then(resp => res.json({status: 200}))
+  const { tempUserToken, token } = req.body
+  if (!!tempUserToken && !!token) {
+    const resultOne = await helper.verifyToken(tempUserToken)
+    const resultTwo = await helper.verifyToken(token)
+
+    if (resultOne.valid && resultTwo.valid) {
+      try {
+        const result = await helper.verifyToken(token)
+        if (result.valid) {
+          Presentation.updateMany({userID: tempUserToken}, {$set: {userID: token}}).then(resp => res.json({status: 200}))
+        }
       }
-    }
-    catch (err) {
+      catch (err) {
+        res.json({
+          error: err
+        });
+      }
+    } else {
       res.json({
-        error: err
-      });
+        error: 'Invalid token provided'
+      })
     }
   }
 }
 
-exports.load_presentation = (req, res) => {
+exports.load_presentations = async (req, res) => {
   // code to load single presentation goes here
-  const { id } = req.params;
-  Presentation.findById(id).then((presentation) => {
-    if (presentation) {
-      res.json();
+  const { token } = req.params;
+  if (!!token) {
+    const result = await helper.verifyToken(token)
+    if (result.valid) {
+      Presentations.find({userID: token}).then((presentations) => {
+        if (presentation) {
+          res.json(presentations);
+        }
+      }).catch((err) => {
+        res.json({
+          err,
+          errData: 'Presentations not found'
+        });
+      })
+    } else {
+      res.json({error: 'Invalid token provided'})
     }
-  }).catch((err) => {
+  } else {
     res.json({
-      err,
-      errData: 'Presentation not found'
-    });
-  })
+      error: 'No token provided'
+    })
+  }
 }
 
 exports.create_presentation = (req, res) => {
@@ -189,25 +230,30 @@ exports.create_slide = (req, res) => {
   }
 }
 
-exports.update_slide = (req, res) => {
+exports.update_slide = async (req, res) => {
   const { id } = req.params;
-  const { presentation, data, canvasDimensions } = req.body;
-  if (!!id && !!presentation && !!data) {
-    try {
-      Presentation.findById(presentation, function (error, result) {
-        if (error) console.log(error);
-        result.slides.id(id).data = JSON.stringify(data);
-        result.slides.id(id).canvasDimensions = canvasDimensions
-        result.save();
-        res.json({
-          status: 200
+  const { token, presentation, data, canvasDimensions } = req.body;
+  if (!!id && !!presentation && !!data && !!token) {
+    const result = await helper.verifyToken(token)
+      if (result.valid) {
+        try {
+          Presentation.findById(presentation, function (error, result) {
+            if (error) console.log(error);
+            result.slides.id(id).data = JSON.stringify(data);
+            result.slides.id(id).canvasDimensions = canvasDimensions
+            result.save();
+            res.json({
+              status: 200
+            });
         });
-    });
-    } catch (err) {
-      res.json({
-        error: err
-      });
-    }
+        } catch (err) {
+          res.json({
+            error: err
+          });
+        }
+      } else {
+        res.json({error: 'Invalid token'})
+      }
   }
 }
 
