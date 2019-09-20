@@ -257,50 +257,34 @@ exports.update_slide = async (req, res) => {
   }
 }
 
-exports.delete_slide = (req, res) => {
+exports.delete_slide = async (req, res) => {
   const {
     id
   } = req.params;
   const {
-    presentation
+    token,
+    presentationID
   } = req.body
 
-  try {
-    Presentation.findByIdAndUpdate({_id: new ObjectId(presentation)}, {
-      '$pull': {
-        "slides": {
-          '_id': new ObjectId(id)
-        }
-      }
-    }, (err, result) => {
-      if (err) {
+  if (!!id && !!presentationID && !!token) {
+    const result = await helper.verifyToken(token)
+    if (result.valid) {
+      try {
+        Presentation.findById(presentationID, function (error, result) {
+          if (error) console.log(error);
+          result.slides.pull({ _id: id }) ;
+          result.save();
+          res.json({
+            status: 200
+          });
+      });
+      } catch (err) {
         res.json({
           error: err
-        })
-      } else {
-        res.json({
-          status: "200 OK"
         });
       }
-    })
-  } catch (err) {
-    res.json({
-      error: err
-    });
-  }
-
-  Presentation.findOneAndDelete({"slides._id": id },
-  {
-    "$pull": {
-      "slides": {
-        _id: id
-      }
-    }
-  }, (err, doc) => {
-    if (err) {
-      res.json(err);
     } else {
-      res.json(doc);
+      res.json({error: 'Invalid token'})
     }
-  })
+  }
 };
