@@ -16,4 +16,6 @@ RUN npm install
 COPY . .
 
 EXPOSE 3001
+ENV NODE_ENV development
+ENV MONGO_HOST "host.docker.internal"
 CMD [ "yarn", "start" ]

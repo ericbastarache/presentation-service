@@ -5,4 +5,5 @@ services:
         ports:
             - "3001:3001"
     node:
-        image: "presentation_service"
+        image: "presentation_servicek"
+        network_mode: "host"
